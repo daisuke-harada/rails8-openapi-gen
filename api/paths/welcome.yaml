@@ -1,4 +1,5 @@
 get:
+  tags: ["health"]
   responses:
     "200":
       description: "Successful response"

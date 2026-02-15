@@ -1,0 +1,34 @@
+openapi: 3.0.3
+info:
+  title: Enman API
+  version: 0.1.1
+servers:
+- description: Local development server
+  url: http://localhost:3000
+tags:
+- description: Endpoints related to health checks and status monitoring
+  name: health
+paths:
+  /welcome:
+    get:
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/WelcomeResponseData"
+          description: Successful response
+      tags:
+      - health
+components:
+  schemas:
+    WelcomeResponseData:
+      example:
+        message: hello
+      properties:
+        message:
+          example: hello
+          type: string
+      required:
+      - message
+      type: object
