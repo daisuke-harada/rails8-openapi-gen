@@ -1,0 +1,12 @@
+get:
+  tags: ["health"]
+  operationId: railsHealthCheck
+  summary: "Health check"
+  responses:
+    "200":
+      description: "OK"
+      content:
+        text/plain:
+          schema:
+            type: string
+            example: "OK"

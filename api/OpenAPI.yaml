@@ -9,5 +9,5 @@ tags:
   - name: health
     description: Endpoints related to health checks and status monitoring
 paths:
-  /welcome:
-    $ref: ./paths/welcome.yaml
+  /up:
+    $ref: ./paths/up.yaml

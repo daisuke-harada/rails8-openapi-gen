@@ -1,9 +1,0 @@
-get:
-  tags: ["health"]
-  responses:
-    "200":
-      description: "Successful response"
-      content:
-        application/json:
-          schema:
-            $ref: "../components/responses/default.yaml#/components/schemas/WelcomeResponseData"

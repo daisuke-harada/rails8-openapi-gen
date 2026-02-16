@@ -9,26 +9,19 @@ tags:
 - description: Endpoints related to health checks and status monitoring
   name: health
 paths:
-  /welcome:
+  /up:
     get:
+      operationId: railsHealthCheck
       responses:
         "200":
           content:
-            application/json:
+            text/plain:
               schema:
-                $ref: "#/components/schemas/WelcomeResponseData"
-          description: Successful response
+                example: OK
+                type: string
+          description: OK
+      summary: Health check
       tags:
       - health
 components:
-  schemas:
-    WelcomeResponseData:
-      example:
-        message: hello
-      properties:
-        message:
-          example: hello
-          type: string
-      required:
-      - message
-      type: object
+  schemas: {}

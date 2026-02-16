@@ -1,10 +1,10 @@
+# frozen_string_literal: true
+
+# THIS FILE IS AUTO-GENERATED FROM OPENAPI. DO NOT EDIT BY HAND.
+# Source: api/resolved/openapi/openapi.yaml
+# Generated at: 2026-02-16T15:12:54Z
+
 Rails.application.routes.draw do
-  # Define your application routes per the DSL in https://guides.rubyonrails.org/routing.html
-
-  # Reveal health status on /up that returns 200 if the app boots with no exceptions, otherwise 500.
-  # Can be used by load balancers and uptime monitors to verify that the app is live.
-  get "up" => "rails/health#show", as: :rails_health_check
-
-  # Defines the root path route ("/")
-  # root "posts#index"
+  # Health check | operationId=railsHealthCheck
+  get "/up" => "health#rails_health_check"
 end
