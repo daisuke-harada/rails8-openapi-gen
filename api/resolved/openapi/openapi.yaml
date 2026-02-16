@@ -1,0 +1,27 @@
+openapi: 3.0.3
+info:
+  title: Enman API
+  version: 0.1.1
+servers:
+- description: Local development server
+  url: http://localhost:3000
+tags:
+- description: Endpoints related to health checks and status monitoring
+  name: health
+paths:
+  /up:
+    get:
+      operationId: railsHealthCheck
+      responses:
+        "200":
+          content:
+            text/plain:
+              schema:
+                example: OK
+                type: string
+          description: OK
+      summary: Health check
+      tags:
+      - health
+components:
+  schemas: {}
