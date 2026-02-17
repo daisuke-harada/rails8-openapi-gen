@@ -1,6 +1,6 @@
 get:
   tags: ["health"]
-  operationId: railsHealthCheck
+  operationId: up
   summary: "Health check"
   responses:
     "200":
