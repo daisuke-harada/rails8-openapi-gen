@@ -70,6 +70,6 @@ COPY --chown=rails:rails --from=build /rails /rails
 # Entrypoint prepares the database.
 ENTRYPOINT ["/rails/bin/docker-entrypoint"]
 
-# Start server for development by default (port 3000). Compose can override this.
-EXPOSE 3000
-CMD ["./bin/thrust", "./bin/rails", "server", "-b", "0.0.0.0", "-p", "3000"]
+# Start server for development by default (port 1234). Compose can override this.
+EXPOSE 1234
+CMD ["./bin/thrust", "./bin/rails", "server", "-b", "0.0.0.0", "-p", "1234"]

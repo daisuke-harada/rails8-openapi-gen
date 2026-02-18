@@ -19,10 +19,11 @@ services:
       dockerfile: Dockerfile
     # Use rails server directly in development to avoid platform-specific native
     # launcher issues (e.g. thruster binary unsupported on aarch64). Compose
-    # command can be overridden if needed.
-    command: ./bin/rails server -b 0.0.0.0 -p 3000
+    # command can be overridden if needed. Run on port 1234 inside the
+    # container and expose it to the host on 1234 as requested.
+    command: ./bin/rails server -b 0.0.0.0 -p 1234
     ports:
-      - "3000:3000"
+      - "1234:1234"
     env_file:
       - .envrc
     depends_on:
@@ -31,6 +32,15 @@ services:
     volumes:
       - .:/rails:cached
     working_dir: /rails
+
+  swagger:
+    image: swaggerapi/swagger-ui:latest
+    ports:
+      - "8080:8080"
+    volumes:
+      - ./api/resolved/openapi/openapi.yaml:/openapi/openapi.yaml:ro
+    environment:
+      SWAGGER_JSON: /openapi/openapi.yaml
 
 volumes:
   db_data:
