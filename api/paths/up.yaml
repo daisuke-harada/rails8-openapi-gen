@@ -6,7 +6,7 @@ get:
     "200":
       description: "OK"
       content:
-        text/plain:
+        application/json:
           schema:
-            type: string
-            example: "OK"
+            type: object
+            example: {}

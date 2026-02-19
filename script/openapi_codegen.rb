@@ -106,10 +106,37 @@ controller_actions.each do |controller, actions|
     end
 
     methods_str = +""
-    missing.each do |action|
-      methods_str << "  def #{action}\n"
-      methods_str << "    head :no_content\n"
-      methods_str << "  end\n\n"
+    # If a developer-provided ERB template exists, use it to render method stubs.
+    template_path = File.join('script', 'openapi_action_template.erb')
+    if File.exist?(template_path)
+      tpl = File.read(template_path)
+      missing.each do |action|
+        # Find a representative route for this action (if available) to populate template vars
+        route = (@controller_routes && @controller_routes[controller]) ? @controller_routes[controller].find { |r| r[:action] == action } : nil
+        locals = {
+          action: action,
+          controller: controller,
+          path: route ? route[:path] : '',
+          method: route ? route[:verb] : ''
+        }
+        # Use result_with_hash when available (Ruby 2.5+), fallback to basic ERB binding
+        rendered = if ERB.instance_methods.include?(:result_with_hash)
+                     ERB.new(tpl).result_with_hash(locals)
+        else
+                     # create a binding with local variables for ERB
+                     b = binding
+                     locals.each { |k, v| b.local_variable_set(k.to_sym, v) }
+                     ERB.new(tpl).result(b)
+        end
+        methods_str << rendered
+        methods_str << "\n" unless rendered.end_with?("\n")
+      end
+    else
+      missing.each do |action|
+        methods_str << "  def #{action}\n"
+        methods_str << "    head :no_content\n"
+        methods_str << "  end\n\n"
+      end
     end
 
     # ensure methods_str starts/ends with a newline
