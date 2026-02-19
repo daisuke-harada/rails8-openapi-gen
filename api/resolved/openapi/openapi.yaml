@@ -15,10 +15,10 @@ paths:
       responses:
         "200":
           content:
-            text/plain:
+            application/json:
               schema:
-                example: OK
-                type: string
+                example: {}
+                type: object
           description: OK
       summary: Health check
       tags:

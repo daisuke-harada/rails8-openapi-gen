@@ -3,5 +3,5 @@
   def <%= action %>
     # TODO: implement <%= action %> for <%= controller %>#<%= action %>
     # path: <%= path %>, method: <%= method.upcase %>
-    head :no_content
+    render json: {}, status: :ok
   end
