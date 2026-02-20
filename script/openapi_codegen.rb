@@ -11,8 +11,8 @@ options = { force: false }
 spec = YAML.load_file(OPENAPI_PATH)
 paths = spec.fetch("paths", {})
 
-# 許可する HTTP メソッドのリスト（path-item の他のキーを除外するため）
-ALLOWED_HTTP_METHODS = %w[get post put patch delete options head].freeze
+# 許可するHTTPメソッドのリスト（path-item の他のキーを除外するため）
+ALLOWED_HTTP_METHODS = %w[get post put patch delete].freeze
 
 def controller_from_tags(path, operation)
   tags = operation["tags"]
@@ -21,7 +21,7 @@ def controller_from_tags(path, operation)
   return nil unless tags.is_a?(Array) && !tags.empty?
   tag = tags.find { |t| t && !t.to_s.strip.empty? }
   return nil unless tag
-  # Rails/ActiveSupport の underscore を使う
+  # Rails/ActiveSupportのunderscore を使う
   tag.to_s.underscore
 end
 
@@ -198,7 +198,6 @@ generated_block << "# END openapi routes - AUTO-GENERATED\n"
 File.open(routes_file, 'w') do |f|
   f.puts "# THIS FILE IS AUTO-GENERATED FROM OPENAPI. DO NOT EDIT BY HAND."
   f.puts "# Source: #{OPENAPI_PATH}"
-  f.puts "# Generated at: #{Time.now.utc.strftime('%Y-%m-%dT%H:%M:%SZ')}\n"
   f.puts "Rails.application.routes.draw do"
   if defined?(@controller_routes) && @controller_routes
     @controller_routes.each do |ctrl, routes|
