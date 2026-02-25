@@ -4,9 +4,16 @@ get:
   summary: "Health check"
   responses:
     "200":
-      description: "OK"
-      content:
-        application/json:
-          schema:
-            type: object
-            example: {}
+      $ref: "#/components/schemas/HealthOkResponse"
+
+components:
+  schemas:
+    HealthOkResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "I'm up!"
+        test:
+          type: integer
+          example: 123
