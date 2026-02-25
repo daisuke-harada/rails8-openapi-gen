@@ -126,6 +126,8 @@ GEM
       rdoc (>= 4.0.0)
       reline (>= 0.4.2)
     json (2.18.1)
+    jsonapi-serializer (2.2.0)
+      activesupport (>= 4.2)
     kamal (2.10.1)
       activesupport (>= 7.0)
       base64 (~> 0.2)
@@ -195,6 +197,11 @@ GEM
       ast (~> 2.4.1)
       racc
     pg (1.6.3)
+    pg (1.6.3-aarch64-linux)
+    pg (1.6.3-aarch64-linux-musl)
+    pg (1.6.3-arm64-darwin)
+    pg (1.6.3-x86_64-linux)
+    pg (1.6.3-x86_64-linux-musl)
     pp (0.6.3)
       prettyprint
     prettyprint (0.2.0)
@@ -357,6 +364,7 @@ DEPENDENCIES
   bundler-audit
   debug
   image_processing (~> 1.2)
+  jsonapi-serializer
   kamal
   pg (>= 1.4)
   puma (>= 5.0)

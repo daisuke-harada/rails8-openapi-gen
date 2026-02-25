@@ -14,12 +14,7 @@ paths:
       operationId: up
       responses:
         "200":
-          content:
-            application/json:
-              schema:
-                example: {}
-                type: object
-          description: OK
+          $ref: "#/components/schemas/HealthOkResponse"
       summary: Health check
       tags:
       - health

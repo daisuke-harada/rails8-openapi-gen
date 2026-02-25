@@ -36,7 +36,7 @@ services:
   swagger:
     image: swaggerapi/swagger-ui:latest
     ports:
-      - "8080:8080"
+      - "8081:8081"
     volumes:
       - ./api/resolved/openapi/openapi.yaml:/openapi/openapi.yaml:ro
     environment:
