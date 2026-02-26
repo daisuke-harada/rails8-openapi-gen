@@ -4,8 +4,11 @@ get:
   summary: "Health check"
   responses:
     "200":
-      $ref: "#/components/schemas/HealthOkResponse"
-
+      description: OK
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/HealthOkResponse"
 components:
   schemas:
     HealthOkResponse:

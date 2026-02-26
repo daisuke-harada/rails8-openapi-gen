@@ -36,7 +36,8 @@ services:
   swagger:
     image: swaggerapi/swagger-ui:latest
     ports:
-      - "8081:8081"
+      # Swagger UI in the image listens on 8080 inside the container; map host 8081 to container 8080
+      - "8081:8080"
     volumes:
       - ./api/resolved/openapi/openapi.yaml:/openapi/openapi.yaml:ro
     environment:

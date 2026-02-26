@@ -14,9 +14,25 @@ paths:
       operationId: up
       responses:
         "200":
-          $ref: "#/components/schemas/HealthOkResponse"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthOkResponse"
+          description: OK
       summary: Health check
       tags:
       - health
 components:
-  schemas: {}
+  schemas:
+    HealthOkResponse:
+      example:
+        test: 123
+        message: I'm up!
+      properties:
+        message:
+          example: I'm up!
+          type: string
+        test:
+          example: 123
+          type: integer
+      type: object

@@ -23,6 +23,7 @@ RUN apt-get update -qq && \
 # Set development-friendly defaults. These can be overridden at runtime.
 ENV RAILS_ENV="development" \
     BUNDLE_PATH="/usr/local/bundle" \
+    # Default: exclude production gems in development images
     BUNDLE_WITHOUT="production" \
     LD_PRELOAD="/usr/local/lib/libjemalloc.so"
 
