@@ -12,9 +12,10 @@ module Openapi
     # 1つのリソース（例: users）に対するパース結果を保持するデータ構造
     #
     # @!attribute resource_name [String] リソース名（例: "users"）
+    # @!attribute namespace [Array<String>] 名前空間セグメント（例: ["admin"] → Admin::）
     # @!attribute actions [Array<ActionInfo>] そのリソースに紐づくアクション一覧
     # @!attribute permit_params [Array<String>] Strong Parameters用のフィールド名一覧
-    ResourceInfo = Data.define(:resource_name, :actions, :permit_params)
+    ResourceInfo = Data.define(:resource_name, :namespace, :actions, :permit_params)
 
     # 1つのアクションに対するパース結果を保持するデータ構造
     #
@@ -96,20 +97,22 @@ module Openapi
 
   # パスからリソース名でグルーピングして内部表現を作る
   # 手順:
-  #  1. `extract_resource_name(path)` で最上位のリソース名を抽出（例: "/users/{id}" -> "users"）。抽出できないパスは無視。
-  #  2. path に定義された各 HTTP メソッド（"get"/"post" 等）を走査。path レベルの "parameters" キーはスキップする。
-  #  3. `resolve_action(path, http_method)` により Rails 標準アクション名（index/show/create/update/destroy/edit）を決定。
-  #     マッピングに存在しない組み合わせは無視する。
-  #  4. 各アクションについて `ActionInfo` を作成して `actions` リストに追加する。
-  #  5. `create` / `update` の場合は `extract_permit_params(operation)` で Strong Parameters 候補を抽出し、
+  #  1. `parse_path_info(path)` でパスを { namespace:, resource_name: } に分解。抽出できないパスは無視。
+  #  2. namespace + resource_name を結合したキーでグルーピング（例: ["admin", "users"] → "admin/users"）。
+  #  3. path に定義された各 HTTP メソッド（"get"/"post" 等）を走査。path レベルの "parameters" キーはスキップする。
+  #  4. `resolve_action(path, http_method)` により Rails 標準アクション名を決定。マッピングに存在しない組み合わせは無視する。
+  #  5. 各アクションについて `ActionInfo` を作成して `actions` リストに追加する。
+  #  6. `create` / `update` の場合は `extract_permit_params(operation)` で Strong Parameters 候補を抽出し、
   #     `permit_params` にマージする（重複は排除）。
-  # 結果的に grouped は次のような構造になります:
-  #   { "users" => { actions: [ActionInfo, ...], permit_params: ["name", "email", ...] }, ... }
   # `@target_resources` が設定されている場合は対象リソースのみ処理します。
-  puts paths
   grouped = paths.each_with_object({}) do |(path, methods), acc|
-        resource = extract_resource_name(path)
-        next if resource.nil?
+        info = parse_path_info(path)
+        next if info.nil?
+
+        resource = info[:resource_name]
+        namespace = info[:namespace]
+        group_key = (namespace + [ resource ]).join("/")
+
         next if @target_resources && !@target_resources.include?(resource)
 
         methods.each do |http_method, operation|
@@ -119,8 +122,8 @@ module Openapi
           action = resolve_action(path, http_method)
           next if action.nil?
 
-          acc[resource] ||= { actions: [], permit_params: [] }
-          acc[resource][:actions] << ActionInfo.new(
+          acc[group_key] ||= { resource_name: resource, namespace: namespace, actions: [], permit_params: [] }
+          acc[group_key][:actions] << ActionInfo.new(
             name:         action,
             http_method:  http_method,
             path:         path,
@@ -130,41 +133,82 @@ module Openapi
           # create / update は requestBody または parameters からパラメーターを抽出
           if %w[create update].include?(action)
             params = extract_permit_params(operation)
-            acc[resource][:permit_params] |= params
+            acc[group_key][:permit_params] |= params
           end
         end
       end
 
-      grouped.map do |resource_name, data|
+      grouped.map do |_group_key, data|
         ResourceInfo.new(
-          resource_name: resource_name,
+          resource_name: data[:resource_name],
+          namespace:     data[:namespace],
           actions:       data[:actions].uniq { |a| a.name },
           permit_params: data[:permit_params]
         )
       end
     end
 
-    # パス文字列からリソース名（スネークケース複数形）を抽出する
+    # パス文字列を namespace / resource_name / tail に分解する
+    #
+    # 分解ルール:
+    #   - セグメントを順番に走査し、「リソース名とすべき固定セグメント」を決定する。
+    #   - 末尾が "edit" でその直前が {param} の場合、"edit" は tail に属する（edit アクション）。
+    #     この場合は "edit" を除いた最後の固定セグメントをリソース名とする。
+    #   - それ以外は最後の固定セグメントをリソース名とする。
+    #   - リソース名より前の固定セグメントを namespace とする。
+    #   - リソース名より後のセグメント（{id}, edit 等）を tail とする。
     #
     # 例:
-    #   "/users"          => "users"
-    #   "/users/{id}"     => "users"
-    #   "/users/{id}/edit"=> "users"
-    #   "/up"             => "up"
-    #   "/"               => nil
+    #   "/users"                   => { namespace: [],          resource_name: "users", tail: [] }
+    #   "/users/{id}"              => { namespace: [],          resource_name: "users", tail: ["{id}"] }
+    #   "/users/{id}/edit"         => { namespace: [],          resource_name: "users", tail: ["{id}", "edit"] }
+    #   "/admin/users"             => { namespace: ["admin"],   resource_name: "users", tail: [] }
+    #   "/admin/users/{id}"        => { namespace: ["admin"],   resource_name: "users", tail: ["{id}"] }
+    #   "/admin/users/{id}/edit"   => { namespace: ["admin"],   resource_name: "users", tail: ["{id}", "edit"] }
+    #   "/up/{id}/hoge"            => { namespace: ["up"],      resource_name: "hoge",  tail: [] }
+    #   "/up/hoge/{id}"            => { namespace: ["up"],      resource_name: "hoge",  tail: ["{id}"] }
+    #   "/up/{id}/users/{user_id}" => { namespace: ["up"],      resource_name: "users", tail: ["{user_id}"] }
+    #   "/admin/{id}/users"        => { namespace: ["admin"],   resource_name: "users", tail: [] }
+    #   "/"                        => nil
     #
-    # @param path [String] OpenAPIのパス文字列
-    # @return [String, nil]
-    def extract_resource_name(path)
-      # 先頭の "/" を除いたセグメントを分割
+    # @param path [String]
+    # @return [Hash, nil] { namespace: Array<String>, resource_name: String, tail: Array<String> }
+    def parse_path_info(path)
       segments = path.split("/").reject(&:empty?)
       return nil if segments.empty?
 
-      # 最初の非パラメーターセグメントをリソース名とする
-      # 配列の先頭から順番に見ていき、「 { で始まらない最初の要素」を返す
-      resource = segments.find { |s| !s.start_with?("{") }
-      # リソース名が見つかった場合は、ハイフンをアンダースコアに置換して返す(railsの命名規則に合わせるため)
-      resource&.gsub("-", "_")
+      # 固定セグメント（{...} でない）のインデックスを全て取得
+      fixed_indices = segments.each_index.select { |i| !segments[i].start_with?("{") }
+      return nil if fixed_indices.empty?
+
+      # --- edit の特殊処理 ---
+      # 末尾セグメントが "edit" かつその直前が {param} の場合:
+      #   "edit" は tail に含めるため、リソース名候補から除外する
+      #   例: ["up", "{id}", "edit"] → fixed_indices から "edit" の index を除外して探す
+      effective_fixed_indices = fixed_indices
+      last_seg = segments.last
+      second_last_seg = segments.length >= 2 ? segments[-2] : nil
+      if last_seg == "edit" && second_last_seg&.match?(/\A\{.+\}\z/)
+        # "edit" インデックスを除いた固定インデックスでリソースを決める
+        effective_fixed_indices = fixed_indices[0..-2]
+        return nil if effective_fixed_indices.empty?
+      end
+
+      # 最後の固定セグメント（edit 除外後）がリソース名
+      resource_idx  = effective_fixed_indices.last
+      resource_name = segments[resource_idx].gsub("-", "_")
+
+      # リソース名より前の固定セグメントが namespace
+      namespace = effective_fixed_indices[0..-2].map { |i| segments[i].gsub("-", "_") }
+
+      # リソース名より後のセグメントが tail（{id}, edit 等）
+      tail = segments[(resource_idx + 1)..]
+
+      {
+        namespace:     namespace,
+        resource_name: resource_name,
+        tail:          tail
+      }
     end
 
     # HTTPメソッドとパスパターンから Rails アクション名を解決する
@@ -173,9 +217,13 @@ module Openapi
     # @param http_method [String] HTTPメソッド（小文字, 例: "get"）
     # @return [String, nil] Railsアクション名。マッピングに存在しない場合は nil
     def resolve_action(path, http_method)
-      segments = path.split("/").reject(&:empty?)
-      has_id_param = segments.last&.match?(/\A\{.+\}\z/)
-      ends_with_edit = segments.last == "edit"
+      info = parse_path_info(path)
+      return nil unless info
+
+      tail = info[:tail]
+      # tail の末尾で edit / {id} を判定
+      has_id_param   = tail.last&.match?(/\A\{.+\}\z/) || false
+      ends_with_edit = tail.last == "edit"
 
       matched = ACTION_MAPPING.find do |rule|
         rule[:method] == http_method &&
@@ -374,13 +422,19 @@ module Openapi
     #
     # @param resource [ResourceInfo]
     def write_base_controller(resource)
-      model_name       = resource.resource_name.singularize
-      base_class_name  = "#{resource.resource_name.camelize}BaseController"
-      file_path        = GENERATED_DIR.join("#{resource.resource_name}_base_controller.rb")
+      model_name      = resource.resource_name.singularize
+      # namespace がある場合: Admin::UsersBaseController、ない場合: UsersBaseController
+      base_class_name = (resource.namespace.map(&:camelize) + [ "#{resource.resource_name.camelize}BaseController" ]).join("::")
+
+      # 出力先ディレクトリは namespace に合わせてサブディレクトリを作成
+      dir       = GENERATED_DIR.join(*resource.namespace)
+      FileUtils.mkdir_p(dir)
+      file_path = dir.join("#{resource.resource_name}_base_controller.rb")
 
       content = render_template(
         "base_controller.erb",
         base_class_name:    base_class_name,
+        namespace:          resource.namespace,
         model_name:         model_name,
         actions:            resource.actions,
         permit_params:      resource.permit_params,
@@ -396,9 +450,14 @@ module Openapi
     # @param resource [ResourceInfo]
     def write_impl_controller(resource)
       model_name      = resource.resource_name.singularize
-      base_class_name = "#{resource.resource_name.camelize}BaseController"
-      impl_class_name = "#{resource.resource_name.camelize}Controller"
-      file_path       = CONTROLLERS_DIR.join("#{resource.resource_name}_controller.rb")
+      base_class_name = (resource.namespace.map(&:camelize) + [ "#{resource.resource_name.camelize}BaseController" ]).join("::")
+      # namespace を含めた完全クラス名（例: Up::HogeController）
+      impl_class_name = (resource.namespace.map(&:camelize) + [ "#{resource.resource_name.camelize}Controller" ]).join("::")
+
+      # 出力先ディレクトリは namespace に合わせてサブディレクトリを作成
+      dir       = CONTROLLERS_DIR.join(*resource.namespace)
+      FileUtils.mkdir_p(dir)
+      file_path = dir.join("#{resource.resource_name}_controller.rb")
 
       if file_path.exist?
         puts "[スキップ] #{pretty_path(file_path)} (既存ファイルを保護)"
@@ -409,6 +468,7 @@ module Openapi
         "impl_controller.erb",
         base_class_name: base_class_name,
         impl_class_name: impl_class_name,
+        namespace:       resource.namespace,
         model_name:      model_name
       )
 
