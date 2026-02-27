@@ -1,5 +1,9 @@
 source "https://rubygems.org"
 
+# Specify Ruby version to ensure consistent Ruby across environments (development/CI/Docker)
+# Keep this in sync with .ruby-version and Dockerfile ARG RUBY_VERSION
+ruby "3.4.1"
+
 # Bundle edge Rails instead: gem "rails", github: "rails/rails", branch: "main"
 gem "rails", "~> 8.1.2"
 # Use sqlite3 as the database for Active Record
