@@ -9,6 +9,23 @@ get:
         application/json:
           schema:
             $ref: "#/components/schemas/HealthOkResponse"
+post:
+  tags: ["health"]
+  operationId: upPost
+  summary: "Health check (POST)"
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: "#/components/schemas/UpPostRequest"
+  responses:
+    "200":
+      description: OK
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/HealthOkResponse"
 components:
   schemas:
     HealthOkResponse:
@@ -17,6 +34,12 @@ components:
         message:
           type: string
           example: "I'm up!"
+        test:
+          type: integer
+          example: 123
+    UpPostRequest:
+      type: object
+      properties:
         test:
           type: integer
           example: 123

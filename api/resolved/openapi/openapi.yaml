@@ -22,6 +22,24 @@ paths:
       summary: Health check
       tags:
       - health
+    post:
+      operationId: upPost
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpPostRequest"
+        required: true
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthOkResponse"
+          description: OK
+      summary: Health check (POST)
+      tags:
+      - health
 components:
   schemas:
     HealthOkResponse:
@@ -32,6 +50,14 @@ components:
         message:
           example: I'm up!
           type: string
+        test:
+          example: 123
+          type: integer
+      type: object
+    UpPostRequest:
+      example:
+        test: 123
+      properties:
         test:
           example: 123
           type: integer

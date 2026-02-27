@@ -1,0 +1,29 @@
+# frozen_string_literal: true
+
+# ==============================================================================
+# このファイルは自動生成されます。手動で編集しないでください。
+# 生成元: api/resolved/openapi/openapi.yaml
+# ==============================================================================
+
+module Generated
+  class <%= base_class_name %> < ApplicationController
+    # --------------------------------------------------------------------------
+    # Actions
+    # --------------------------------------------------------------------------
+<% actions.each do |action| %>
+    # <%= action.http_method.upcase %> <%= action.path %><% if action.operation_id %> (operationId: <%= action.operation_id %>)<% end %>
+
+    def <%= action.name %>
+      raise NotImplementedError, "<%= base_class_name %>#<%= action.name %> は未実装です"
+    end
+<% end %>
+<% if permit_params.any? %>
+    private
+
+    # Strong Parameters
+    def <%= model_name %>_params
+      <%= strong_params_code %>
+    end
+<% end %>
+  end
+end
