@@ -40,37 +40,6 @@ paths:
       summary: Health check (POST)
       tags:
       - health
-  /up/hoge/{id}:
-    get:
-      operationId: up
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/HealthOkResponse"
-          description: OK
-      summary: Health check
-      tags:
-      - health
-    post:
-      operationId: upPost
-      requestBody:
-        content:
-          application/json:
-            schema:
-              $ref: "#/components/schemas/UpPostRequest"
-        required: true
-      responses:
-        "200":
-          content:
-            application/json:
-              schema:
-                $ref: "#/components/schemas/HealthOkResponse"
-          description: OK
-      summary: Health check (POST)
-      tags:
-      - health
 components:
   schemas:
     HealthOkResponse:

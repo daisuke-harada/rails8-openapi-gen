@@ -4,7 +4,7 @@ require "fileutils"
 require "ostruct"
 
 module Openapi
-  class ControllerGenerator
+  class CodeGenerator
     TEMPLATES_DIR   = Rails.root.join("lib/templates/openapi")
     GENERATED_DIR   = Rails.root.join("app/controllers/generated")
     CONTROLLERS_DIR = Rails.root.join("app/controllers")
@@ -23,7 +23,8 @@ module Openapi
     # @!attribute http_method [String] HTTPメソッド（例: "get"）
     # @!attribute path [String] OpenAPIのパス（例: "/users/{id}"）
     # @!attribute operation_id [String, nil] OpenAPIのoperationId
-    ActionInfo = Data.define(:name, :http_method, :path, :operation_id)
+    # @!attribute responses [Array<Hash>] レスポンス情報の配列
+    ActionInfo = Data.define(:name, :http_method, :path, :operation_id, :responses)
 
     # HTTPメソッド × パスパターンから Rails アクションを決定するマッピング
     #
@@ -53,7 +54,7 @@ module Openapi
     def run
       load_spec
       resources = parse_resources
-      generate_files(resources)
+      generate_controller_files(resources)
     end
 
     private
@@ -115,24 +116,26 @@ module Openapi
 
         next if @target_resources && !@target_resources.include?(resource)
 
-        methods.each do |http_method, operation|
+        methods.each do |http_method, operation_def|
           # パスパラメーター定義（"parameters"キー）はスキップ
           next if http_method == "parameters"
 
           action = resolve_action(path, http_method)
           next if action.nil?
 
+          # レスポンス定義を解析（2xx優先で schema の properties を抽出）
           acc[group_key] ||= { resource_name: resource, namespace: namespace, actions: [], permit_params: [] }
           acc[group_key][:actions] << ActionInfo.new(
             name:         action,
             http_method:  http_method,
             path:         path,
-            operation_id: operation["operationId"]
+            operation_id: operation_def["operationId"],
+            responses: resolve_responses(operation_def["responses"])
           )
 
           # create / update は requestBody または parameters からパラメーターを抽出
           if %w[create update].include?(action)
-            params = extract_permit_params(operation)
+            params = extract_permit_params(operation_def)
             acc[group_key][:permit_params] |= params
           end
         end
@@ -234,6 +237,44 @@ module Openapi
       matched&.fetch(:action)
     end
 
+    # responses ハッシュからスキーマ情報を抽出して配列で返す
+    #
+    # 各レスポンスエントリについて、content.application/json.schema が存在する場合に
+    # そのスキーマを解決して { status:, schema_ref:, schema_name:, fields: } のハッシュを作り
+    # 配列で返します。スキーマが見つからないエントリはスキップされます。
+    #
+    # @param responses [Hash] OpenAPI の responses 定義
+    # @return [Array<Hash>] 抽出結果の配列（見つからなければ空配列）
+    #   [
+    #     { status: "200", schema_ref: "#/components/schemas/Foo", schema_name: "Foo", fields: [...] },
+    #     ...
+    #   ]
+    def resolve_responses(responses)
+      return [] unless responses.is_a?(Hash) && !responses.empty?
+
+      responses.map do |status, resp|
+        # content 内の JSON schema を探す
+        schema = resp.dig("content", "application/json", "schema")
+        next unless schema.is_a?(Hash)
+
+        # $ref がある場合は解決する
+        ref = schema["$ref"]
+        resolved = ref ? (resolve_ref(ref) || schema) : schema
+
+        # スキーマ名（$ref の末尾セグメント）
+        schema_name = ref&.split("/")&.last
+
+        # properties を再帰的に展開（extract_schema_params を再利用）
+        fields = extract_schema_params(resolved)
+        {
+          status:      status,
+          schema_ref:  ref,
+          schema_name: schema_name,
+          fields:      fields
+        }
+      end.compact
+    end
+
     # operation定義からStrong Parameters用のフィールド名一覧を抽出する
     #
     # 優先順位:
@@ -242,13 +283,12 @@ module Openapi
     #
     # readOnly: true のプロパティは除外する
     #
-    # @param operation [Hash] OpenAPIのoperation定義
+    # @param operation_def [Hash] OpenAPIのoperation定義
     # @return [Array<String>] フィールド名の配列
-    def extract_permit_params(operation)
+    def extract_permit_params(operation_def)
       params = []
-
       # --- requestBody から抽出 ---
-      request_body = operation["requestBody"]
+      request_body = operation_def["requestBody"]
       if request_body
         schema = request_body
           .dig("content", "application/json", "schema") ||
@@ -258,7 +298,7 @@ module Openapi
       end
 
       # --- parameters から抽出（bodyスコープのみ） ---
-      (operation["parameters"] || []).each do |param|
+      (operation_def["parameters"] || []).each do |param|
         next if %w[path query header cookie].include?(param["in"])
 
         params << param["name"] if param["name"]
@@ -403,7 +443,7 @@ module Openapi
     # 全リソースのコントローラーファイルを生成する
     #
     # @param resources [Array<ResourceInfo>]
-    def generate_files(resources)
+    def generate_controller_files(resources)
       if resources.empty?
         puts "[WARN] 対象リソースが見つかりませんでした"
         return

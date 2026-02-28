@@ -3,11 +3,11 @@ namespace :openapi do
     OpenAPI仕様書からRailsコントローラーを自動生成する
 
     使用方法:
-      bundle exec rake openapi:generate_controllers
-      bundle exec rake openapi:generate_controllers[users]        # 特定リソースのみ
-      bundle exec rake openapi:generate_controllers[users,posts]  # 複数リソース指定
+      bundle exec rake openapi:generate_code
+      bundle exec rake openapi:generate_code[users]        # 特定リソースのみ
+      bundle exec rake openapi:generate_code[users,posts]  # 複数リソース指定
   DESC
-  task :generate_controllers, [ :resources ] => :environment do |_task, args|
+  task :generate_code, [ :resources ] => :environment do |_task, args|
     openapi_path = Rails.root.join("api/resolved/openapi/openapi.yaml")
 
     unless File.exist?(openapi_path)
@@ -25,7 +25,7 @@ namespace :openapi do
     puts "対象リソース: #{target_resources&.join(', ') || '全リソース'}"
     puts "=" * 60
 
-    generator = Openapi::ControllerGenerator.new(
+    generator = Openapi::CodeGenerator.new(
       openapi_path: openapi_path,
       target_resources: target_resources
     )
