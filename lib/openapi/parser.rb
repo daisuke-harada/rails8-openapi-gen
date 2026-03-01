@@ -166,10 +166,16 @@ module Openapi
       matched&.fetch(:action)
     end
 
+    # HTTP ステータスコード（数値文字列）→ Rails シンボルのマッピング
+    #
+    # Rack::Utils::SYMBOL_TO_STATUS_CODE の逆引き
+    # 例: "200" => :ok, "201" => :created, "404" => :not_found
+    HTTP_STATUS_SYMBOLS = Rack::Utils::SYMBOL_TO_STATUS_CODE.invert.transform_keys(&:to_s).freeze
+
     # responses ハッシュからスキーマ情報を抽出して配列で返す
     #
     # 各レスポンスエントリについて、content["application/json"]["schema"] が存在する場合に
-    # そのスキーマを解決して { status:, schema_ref:, schema_name:, fields: } のハッシュを作り
+    # そのスキーマを解決して { status:, status_sym:, schema_ref:, schema_name:, fields:, example: } のハッシュを作り
     # 配列で返します。スキーマが見つからないエントリはスキップされます。
     #
     # @param responses [Hash] OpenAPI の responses 定義
@@ -185,8 +191,10 @@ module Openapi
         resolved    = ref ? (resolve_ref(ref) || schema) : schema
         schema_name = ref&.split("/")&.last
         fields      = extract_schema_params(resolved)
+        example     = extract_example(resolved)
+        status_sym  = HTTP_STATUS_SYMBOLS[status.to_s]
 
-        { status: status, schema_ref: ref, schema_name: schema_name, fields: fields }
+        { status: status, status_sym: status_sym, schema_ref: ref, schema_name: schema_name, fields: fields, example: example }
       end.compact
     end
 
@@ -281,6 +289,40 @@ module Openapi
         else
           name
         end
+      end
+    end
+
+    # スキーマの properties から { field名 => example値 } の Hash を返す
+    #
+    # プロパティレベルの example を優先し、なければスキーマレベルの example を参照する。
+    # example が存在しないフィールドは nil になる。
+    #
+    # 例:
+    #   properties:
+    #     message: { type: string, example: "I'm up!" }
+    #     test:    { type: integer, example: 123 }
+    #   => { "message" => "I'm up!", "test" => 123 }
+    #
+    # @param schema [Hash] OpenAPI のスキーマ定義
+    # @return [Hash] { field名 => example値 }
+    def extract_example(schema)
+      return {} unless schema.is_a?(Hash)
+
+      properties = schema["properties"] || {}
+      schema_example = schema["example"] || {}
+
+      properties.each_with_object({}) do |(name, definition), acc|
+        definition = resolve_ref(definition["$ref"]) || next if definition.is_a?(Hash) && definition["$ref"]
+        next unless definition.is_a?(Hash)
+
+        # プロパティレベルの example を優先、なければスキーマレベルの example から取得
+        value = if definition.key?("example")
+          definition["example"]
+        elsif schema_example.key?(name)
+          schema_example[name]
+        end
+
+        acc[name] = value
       end
     end
   end

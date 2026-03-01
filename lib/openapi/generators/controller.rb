@@ -77,18 +77,6 @@ module Openapi
         puts "[新規作成] #{pretty_path(file_path)}"
       end
 
-      # namespace + resource_name + suffix からクラス名文字列を生成する
-      #
-      # 例: namespace: ["admin"], resource_name: "users", suffix: "BaseController"
-      #     => "Admin::UsersBaseController"
-      #
-      # @param resource [Openapi::Parser::ResourceInfo]
-      # @param suffix [String]
-      # @return [String]
-      def class_name(resource, suffix:)
-        (resource.namespace.map(&:camelize) + [ "#{resource.resource_name.camelize}#{suffix}" ]).join("::")
-      end
-
       # permit_params の配列から `params.require(...).permit(...)` のコード文字列を生成する
       #
       # 例:

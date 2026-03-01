@@ -14,10 +14,19 @@ module Generated
     # <%= action.http_method.upcase %> <%= action.path %><% if action.operation_id %> (operationId: <%= action.operation_id %>)<% end %>
 
     def <%= action.name %>
+<%- success_responses = action.responses.select { |r| r[:status].to_s.start_with?("2") } -%>
+<%- if success_responses.any? -%>
+<%- first_response = success_responses.first -%>
+<%- example = first_response[:example] || {} -%>
+      resource = OpenStruct.new(<%= example.map { |k, v| "#{k}: #{v.inspect}" }.join(", ") %>)
+      render json: <%= model_name.pluralize.camelize %>::<%= action.name.camelize %>Serializer.new(resource).serialize, status: :<%= first_response[:status_sym] %>
+<%- else -%>
       raise NotImplementedError, "<%= base_class_name %>#<%= action.name %> は未実装です"
+<%- end -%>
     end
-<% end %>
-<% if permit_params.any? %>
+<% end -%>
+<% if permit_params.any? -%>
+
     private
 
     # Strong Parameters

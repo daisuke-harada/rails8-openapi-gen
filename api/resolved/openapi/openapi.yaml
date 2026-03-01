@@ -31,11 +31,11 @@ paths:
               $ref: "#/components/schemas/UpPostRequest"
         required: true
       responses:
-        "200":
+        "201":
           content:
             application/json:
               schema:
-                $ref: "#/components/schemas/HealthOkResponse"
+                $ref: "#/components/schemas/HealthPostResponse"
           description: OK
       summary: Health check (POST)
       tags:
@@ -53,6 +53,14 @@ components:
         test:
           example: 123
           type: integer
+      type: object
+    HealthPostResponse:
+      example:
+        tester: I'm up!
+      properties:
+        tester:
+          example: I'm up!
+          type: string
       type: object
     UpPostRequest:
       example:

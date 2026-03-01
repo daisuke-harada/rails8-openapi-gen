@@ -75,6 +75,7 @@ GEM
       securerandom (>= 0.3)
       tzinfo (~> 2.0, >= 2.0.5)
       uri (>= 0.13.1)
+    alba (3.10.0)
     ast (2.4.3)
     base64 (0.3.0)
     bcrypt_pbkdf (1.1.2)
@@ -126,8 +127,6 @@ GEM
       rdoc (>= 4.0.0)
       reline (>= 0.4.2)
     json (2.18.1)
-    jsonapi-serializer (2.2.0)
-      activesupport (>= 4.2)
     kamal (2.10.1)
       activesupport (>= 7.0)
       base64 (~> 0.2)
@@ -360,12 +359,12 @@ PLATFORMS
   x86_64-linux-musl
 
 DEPENDENCIES
+  alba
   bootsnap
   brakeman
   bundler-audit
   debug
   image_processing (~> 1.2)
-  jsonapi-serializer
   kamal
   pg (>= 1.4)
   puma (>= 5.0)

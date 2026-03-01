@@ -19,6 +19,18 @@ module Openapi
 
       private
 
+      # namespace + resource_name + suffix からクラス名文字列を生成する
+      #
+      # 例: namespace: ["admin"], resource_name: "users", suffix: "BaseController"
+      #     => "Admin::UsersBaseController"
+      #
+      # @param resource [Openapi::Parser::ResourceInfo]
+      # @param suffix [String]
+      # @return [String]
+      def class_name(resource, suffix:)
+        (resource.namespace.map(&:camelize) + [ "#{resource.resource_name.camelize}#{suffix}" ]).join("::")
+      end
+
       # ERBテンプレートをレンダリングする
       #
       # @param template_name [String] テンプレートファイル名（例: "base_controller.erb"）
