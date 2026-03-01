@@ -2,6 +2,7 @@ require "yaml"
 require_relative "parser"
 require_relative "generators/controller"
 require_relative "generators/serializer"
+require_relative "generators/routes"
 
 module Openapi
   class CodeGenerator
@@ -15,6 +16,7 @@ module Openapi
     def run
       spec      = load_spec
       resources = Parser.new(spec, target_resources: @target_resources).parse_resources
+      Generators::Routes.new(resources).run
       Generators::Serializer.new(resources).run
       Generators::Controller.new(resources).run
     end

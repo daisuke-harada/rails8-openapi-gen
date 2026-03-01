@@ -31,5 +31,6 @@ module Generated
     def up_params
       params.require(:up).permit(:test)
     end
+
   end
 end
