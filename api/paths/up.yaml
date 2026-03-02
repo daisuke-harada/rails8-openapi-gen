@@ -20,12 +20,12 @@ post:
         schema:
           $ref: "#/components/schemas/UpPostRequest"
   responses:
-    "200":
+    "201":
       description: OK
       content:
         application/json:
           schema:
-            $ref: "#/components/schemas/HealthOkResponse"
+            $ref: "#/components/schemas/HealthPostResponse"
 components:
   schemas:
     HealthOkResponse:
@@ -37,6 +37,12 @@ components:
         test:
           type: integer
           example: 123
+    HealthPostResponse:
+      type: object
+      properties:
+        tester:
+          type: string
+          example: "I'm up!"
     UpPostRequest:
       type: object
       properties:

@@ -1,0 +1,21 @@
+# frozen_string_literal: true
+
+# ==============================================================================
+# このファイルは自動生成されました（初回のみ）。自由に編集してください。
+# ベースクラス: Generated::<%= base_class_name %>
+# ==============================================================================
+
+<% modules.each do |mod| -%>
+module <%= mod %>
+<% end -%>
+  class <%= impl_class_name.split("::").last %> < Generated::<%= base_class_name %>
+    # ここにカスタムロジックを追加してください。
+    # 例:
+    #
+    #   attribute :full_name do |resource|
+    #     "#{resource.first_name} #{resource.last_name}"
+    #   end
+  end
+<% modules.each do -%>
+end
+<% end -%>

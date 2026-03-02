@@ -14,15 +14,16 @@ module Generated
     # GET /up (operationId: up)
 
     def index
-      raise NotImplementedError, "UpBaseController#index は未実装です"
+      resource = OpenStruct.new(message: "I'm up!", test: 123)
+      render json: Ups::IndexSerializer.new(resource).serialize, status: :ok
     end
 
     # POST /up (operationId: upPost)
 
     def create
-      raise NotImplementedError, "UpBaseController#create は未実装です"
+      resource = OpenStruct.new(tester: "I'm up!")
+      render json: Ups::CreateSerializer.new(resource).serialize, status: :created
     end
-
 
     private
 

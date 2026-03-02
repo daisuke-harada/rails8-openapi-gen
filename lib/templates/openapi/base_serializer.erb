@@ -1,0 +1,22 @@
+# frozen_string_literal: true
+
+# ==============================================================================
+# このファイルは自動生成されます。手動で編集しないでください。
+# 生成元: api/resolved/openapi/openapi.yaml
+# ==============================================================================
+
+module Generated
+<%- modules.each_with_index do |mod, i| -%>
+<%= "  " * (i + 1) %>module <%= mod %>
+<%- end -%>
+<%= "  " * (modules.size + 1) %>class <%= base_class_name.split("::").last %>
+<%= "  " * (modules.size + 2) %>include Alba::Resource
+<%- if attributes.any? -%>
+
+<%= "  " * (modules.size + 2) %>attributes <%= attributes.map { |attr| ":#{attr}" }.join(", ") %>
+<%- end -%>
+<%= "  " * (modules.size + 1) %>end
+<%- modules.each_with_index do |_, i| -%>
+<%= "  " * (modules.size - i) %>end
+<%- end -%>
+end
