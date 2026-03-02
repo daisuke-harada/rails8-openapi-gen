@@ -6,15 +6,17 @@
 # ==============================================================================
 
 module Generated
-<% modules.each do |mod| -%>
-  module <%= mod %>
-<% end -%>
-    class <%= base_class_name.split("::").last %>
-      include Alba::Resource
+<%- modules.each_with_index do |mod, i| -%>
+<%= "  " * (i + 1) %>module <%= mod %>
+<%- end -%>
+<%= "  " * (modules.size + 1) %>class <%= base_class_name.split("::").last %>
+<%= "  " * (modules.size + 2) %>include Alba::Resource
+<%- if attributes.any? -%>
 
-      attributes <%= attributes.map { |attr| ":#{attr}" }.join(", ") %>
-    end
-<% modules.each do -%>
-  end
-<% end -%>
+<%= "  " * (modules.size + 2) %>attributes <%= attributes.map { |attr| ":#{attr}" }.join(", ") %>
+<%- end -%>
+<%= "  " * (modules.size + 1) %>end
+<%- modules.each_with_index do |_, i| -%>
+<%= "  " * (modules.size - i) %>end
+<%- end -%>
 end

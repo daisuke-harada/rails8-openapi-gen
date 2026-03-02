@@ -3,7 +3,7 @@ require_relative "base"
 module Openapi
   module Generators
     class Routes < Base
-      ROUTES_FILE = Rails.root.join("config/routes.openapi.rb")
+      ROUTES_FILE = Rails.root.join("config/routes/openapi.rb")
 
       def run
         if @resources.empty?
@@ -12,7 +12,7 @@ module Openapi
         end
 
         route_tree  = build_route_tree(@resources)
-        route_lines = render_nodes(route_tree, indent: 1)
+        route_lines = render_nodes(route_tree, indent: 0)
 
         content = render_template(
           "routes.erb",
@@ -80,24 +80,30 @@ module Openapi
       #
       # @param nodes [Array<Hash>]
       # @param indent [Integer]
+      # @param inside_namespace [Boolean] すでに namespace ブロック内にいるか
       # @return [Array<String>]
-      def render_nodes(nodes, indent:)
+      def render_nodes(nodes, indent:, inside_namespace: false)
         lines = []
 
-        # module namespace でグループ化
-        grouped = nodes.group_by { |n| n[:module_namespace] }
+        if inside_namespace
+          # namespace ブロック内では module_namespace は無視してフラットに並べる
+          nodes.each { |node| lines.concat(render_resource(node, indent: indent, inside_namespace: true)) }
+        else
+          # module namespace でグループ化
+          grouped = nodes.group_by { |n| n[:module_namespace] }
 
-        grouped.each do |ns, ns_nodes|
-          if ns.empty?
-            ns_nodes.each { |node| lines.concat(render_resource(node, indent: indent)) }
-          else
-            # namespace ブロックで包む
-            ns.each_with_index do |seg, i|
-              lines << "#{"  " * (indent + i)}namespace :#{seg} do"
+          grouped.each do |ns, ns_nodes|
+            if ns.empty?
+              ns_nodes.each { |node| lines.concat(render_resource(node, indent: indent)) }
+            else
+              # namespace ブロックで包む
+              ns.each_with_index do |seg, i|
+                lines << "#{"  " * (indent + i)}namespace :#{seg} do"
+              end
+              inner_indent = indent + ns.size
+              ns_nodes.each { |node| lines.concat(render_resource(node, indent: inner_indent, inside_namespace: true)) }
+              ns.size.times { |i| lines << "#{"  " * (indent + ns.size - 1 - i)}end" }
             end
-            inner_indent = indent + ns.size
-            ns_nodes.each { |node| lines.concat(render_resource(node, indent: inner_indent)) }
-            ns.size.times { |i| lines << "#{"  " * (indent + ns.size - 1 - i)}end" }
           end
         end
 
@@ -106,22 +112,42 @@ module Openapi
 
       # 1つのリソースノードをルーティング行の配列として返す
       #
+      # controller: オプションの付与ルール:
+      #   - namespace ブロック外 かつ 親リソースあり → controller: 必要
+      #     （resources ネストは自動でモジュールを解決しないため）
+      #     例: resources :articles { resources :comments }
+      #         → CommentsController を探してしまうため
+      #         → controller: "articles/comments" で Articles::CommentsController を指定
+      #   - namespace ブロック内 → controller: 不要
+      #     （namespace が自動でモジュールを付けるため）
+      #     例: namespace :admin { resources :posts { resources :tags } }
+      #         → Admin::TagsController を自動で解決する
+      #
       # @param node [Hash]
       # @param indent [Integer]
+      # @param inside_namespace [Boolean] すでに namespace ブロック内にいるか
       # @return [Array<String>]
-      def render_resource(node, indent:)
-        only  = node[:actions].map { |a| " :#{a}" }.join(", ")
-        lines = []
+      def render_resource(node, indent:, inside_namespace: false)
+        pad  = "  " * indent
+        only = node[:actions].map { |a| " :#{a}" }.join(",")
 
-        if node[:children].empty?
-          lines << "resources :#{node[:name]}, only: [#{only} ]"
+        # namespace 外 かつ 親リソースあり → controller: を明示
+        controller_option = if !inside_namespace && node[:parent_resources].any?
+          path = (node[:module_namespace] + node[:parent_resources] + [ node[:name] ]).join("/")
+          ", controller: \"#{path}\""
         else
-          lines << "resources :#{node[:name]}, only: [#{only} ] do"
-          lines.concat(render_nodes(node[:children], indent: indent + 1))
-          lines << "end"
+          ""
         end
 
-        lines
+        if node[:children].empty?
+          [ "#{pad}resources :#{node[:name]}, only: [#{only}]#{controller_option}" ]
+        else
+          [
+            "#{pad}resources :#{node[:name]}, only: [#{only}]#{controller_option} do",
+            *render_nodes(node[:children], indent: indent + 1, inside_namespace: inside_namespace),
+            "#{pad}end"
+          ]
+        end
       end
     end
   end

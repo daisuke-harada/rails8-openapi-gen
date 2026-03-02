@@ -43,7 +43,7 @@ module Openapi
 
         attributes = action.responses
                            .select { |r| r[:status].to_s.start_with?("2") }
-                           .flat_map { |r| r[:fields] }
+                           .flat_map { |r| flatten_field_names(r[:fields]) }
                            .uniq
 
         content = render_template(
@@ -124,6 +124,26 @@ module Openapi
       def action_class_name(resource, action, suffix:)
         parts = serializer_modules(resource) + [ "#{action.name.camelize}#{suffix}" ]
         parts.join("::")
+      end
+
+      # fields 配列からスカラーフィールド名のみをフラットに返す
+      #
+      # fields は String または { "key" => [...] } の Hash の混在配列。
+      # Serializer の attributes にはスカラーフィールド名のみ必要なので、
+      # Hash の場合はそのキー名だけを取り出す。
+      #
+      # 例:
+      #   ["id", "title", { "articles" => ["id", "title"] }] → ["id", "title", "articles"]
+      #
+      # @param fields [Array<String, Hash>]
+      # @return [Array<String>]
+      def flatten_field_names(fields)
+        fields.flat_map do |field|
+          case field
+          when String then field
+          when Hash   then field.keys
+          end
+        end.compact
       end
     end
   end

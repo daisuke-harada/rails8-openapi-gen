@@ -5,4 +5,4 @@
 # 生成元: api/resolved/openapi/openapi.yaml
 # ==============================================================================
 
-resources :up, only: [ :index,  :create ]
+resources :up, only: [ :index, :create]
