@@ -41,7 +41,6 @@ module Openapi
       def build_route_tree(resources)
         all_resource_names = resources.map(&:resource_name).to_set
 
-        # キー: "ns1/ns2/resource_name" → ノード Hash
         nodes = resources.each_with_object({}) do |resource, acc|
           key = (resource.namespace + [ resource.resource_name ]).join("/")
           acc[key] = {
@@ -140,10 +139,10 @@ module Openapi
         end
 
         if node[:children].empty?
-          [ "#{pad}resources :#{node[:name]}, only: [#{only}]#{controller_option}" ]
+          [ "#{pad}resources :#{node[:name]}, only: [#{only} ]#{controller_option}" ]
         else
           [
-            "#{pad}resources :#{node[:name]}, only: [#{only}]#{controller_option} do",
+            "#{pad}resources :#{node[:name]}, only: [#{only} ]#{controller_option} do",
             *render_nodes(node[:children], indent: indent + 1, inside_namespace: inside_namespace),
             "#{pad}end"
           ]
