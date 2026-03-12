@@ -1,0 +1,9 @@
+export DB_HOST=db
+export DB_USERNAME=enman
+export DB_PASSWORD=password
+export DB_NAME=enman_development
+
+# Rails environment
+export RAILS_ENV=development
+export RAILS_LOG_TO_STDOUT=true
+export RAILS_SERVE_STATIC_FILES=true

@@ -1,0 +1,47 @@
+services:
+  db:
+    image: postgres:15
+    environment:
+      POSTGRES_USER: ${DB_USERNAME:-enman}
+      POSTGRES_PASSWORD: ${DB_PASSWORD:-password}
+      POSTGRES_DB: ${DB_NAME:-enman_development}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USERNAME:-enman} -d ${DB_NAME:-enman_development}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    # Use rails server directly in development to avoid platform-specific native
+    # launcher issues (e.g. thruster binary unsupported on aarch64). Compose
+    # command can be overridden if needed. Run on port 1234 inside the
+    # container and expose it to the host on 1234 as requested.
+    command: ./bin/rails server -b 0.0.0.0 -p 1234
+    ports:
+      - "1234:1234"
+    env_file:
+      - .env
+    depends_on:
+      db:
+        condition: service_healthy
+    volumes:
+      - .:/rails:cached
+    working_dir: /rails
+
+  swagger:
+    image: swaggerapi/swagger-ui:latest
+    ports:
+      # Swagger UI in the image listens on 8080 inside the container; map host 8081 to container 8080
+      - "8081:8080"
+    volumes:
+      - ./api/resolved/openapi/openapi.yaml:/openapi/openapi.yaml:ro
+    environment:
+      SWAGGER_JSON: /openapi/openapi.yaml
+
+volumes:
+  db_data:

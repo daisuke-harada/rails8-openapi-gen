@@ -1,0 +1,13 @@
+openapi: 3.0.3
+info:
+  title: Enman API
+  version: 0.1.1
+servers:
+  - description: Local development server
+    url: http://localhost:1234
+tags:
+  - name: health
+    description: Endpoints related to health checks and status monitoring
+paths:
+  /up:
+    $ref: ./paths/up.yaml

@@ -1,0 +1,72 @@
+openapi: 3.0.3
+info:
+  title: Enman API
+  version: 0.1.1
+servers:
+- description: Local development server
+  url: http://localhost:1234
+tags:
+- description: Endpoints related to health checks and status monitoring
+  name: health
+paths:
+  /up:
+    get:
+      operationId: up
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthOkResponse"
+          description: OK
+      summary: Health check
+      tags:
+      - health
+    post:
+      operationId: upPost
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/UpPostRequest"
+        required: true
+      responses:
+        "201":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthPostResponse"
+          description: OK
+      summary: Health check (POST)
+      tags:
+      - health
+components:
+  schemas:
+    HealthOkResponse:
+      example:
+        test: 123
+        message: I'm up!
+      properties:
+        message:
+          example: I'm up!
+          type: string
+        test:
+          example: 123
+          type: integer
+      type: object
+    HealthPostResponse:
+      example:
+        tester: I'm up!
+      properties:
+        tester:
+          example: I'm up!
+          type: string
+      type: object
+    UpPostRequest:
+      example:
+        test: 123
+      properties:
+        test:
+          example: 123
+          type: integer
+      type: object

@@ -1,0 +1,51 @@
+get:
+  tags: ["health"]
+  operationId: up
+  summary: "Health check"
+  responses:
+    "200":
+      description: OK
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/HealthOkResponse"
+post:
+  tags: ["health"]
+  operationId: upPost
+  summary: "Health check (POST)"
+  requestBody:
+    required: true
+    content:
+      application/json:
+        schema:
+          $ref: "#/components/schemas/UpPostRequest"
+  responses:
+    "201":
+      description: OK
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/HealthPostResponse"
+components:
+  schemas:
+    HealthOkResponse:
+      type: object
+      properties:
+        message:
+          type: string
+          example: "I'm up!"
+        test:
+          type: integer
+          example: 123
+    HealthPostResponse:
+      type: object
+      properties:
+        tester:
+          type: string
+          example: "I'm up!"
+    UpPostRequest:
+      type: object
+      properties:
+        test:
+          type: integer
+          example: 123

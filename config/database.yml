@@ -1,0 +1,20 @@
+# Use PostgreSQL when running in Docker/Compose. Falls back to DATABASE_URL
+default: &default
+  adapter: postgresql
+  encoding: unicode
+  pool: <%= ENV.fetch("RAILS_MAX_THREADS") { 5 } %>
+  host: <%= ENV.fetch("DB_HOST") { 'db' } %>
+  username: <%= ENV.fetch("DB_USERNAME") { 'enman' } %>
+  password: <%= ENV.fetch("DB_PASSWORD") { 'password' } %>
+
+development:
+  <<: *default
+  database: <%= ENV.fetch("DB_NAME") { 'enman_development' } %>
+
+test:
+  <<: *default
+  database: <%= ENV.fetch("DB_NAME") { 'enman_test' } %>
+
+production:
+  <<: *default
+  database: <%= ENV.fetch("DB_NAME") { 'enman_production' } %>

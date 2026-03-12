@@ -1,0 +1,39 @@
+# frozen_string_literal: true
+
+# ==============================================================================
+# このファイルは自動生成されます。手動で編集しないでください。
+# 生成元: api/resolved/openapi/openapi.yaml
+# ==============================================================================
+
+module Generated
+  class <%= base_class_name %> < ApplicationController
+    # --------------------------------------------------------------------------
+    # Actions
+    # --------------------------------------------------------------------------
+<% actions.each do |action| %>
+    # <%= action.http_method.upcase %> <%= action.path %><% if action.operation_id %> (operationId: <%= action.operation_id %>)<% end %>
+
+    def <%= action.name %>
+<%- success_responses = action.responses.select { |r| r[:status].to_s.start_with?("2") } -%>
+<%- if success_responses.any? -%>
+<%- first_response = success_responses.first -%>
+<%- example = first_response[:example] || {} -%>
+<%- keys = example.keys -%>
+      resource = Data.define(<%= keys.map { |k| ":#{k}" }.join(", ") %>).new(<%= example.map { |k, v| "#{k}: #{v.inspect}" }.join(", ") %>)
+      render json: ::<%= model_name.pluralize.camelize %>::<%= action.name.camelize %>Serializer.new(resource).serialize, status: :<%= first_response[:status_sym] %>
+<%- else -%>
+      raise NotImplementedError, "<%= base_class_name %>#<%= action.name %> は未実装です"
+<%- end -%>
+    end
+<% end -%>
+<% if permit_params.any? -%>
+
+    private
+
+    # Strong Parameters
+    def <%= model_name %>_params
+      <%= strong_params_code %>
+    end
+<% end %>
+  end
+end
