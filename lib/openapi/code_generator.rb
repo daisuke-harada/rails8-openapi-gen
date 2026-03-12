@@ -19,6 +19,7 @@ module Openapi
       Generators::Routes.new(resources).run
       Generators::Serializer.new(resources).run
       Generators::Controller.new(resources).run
+      cleanup_empty_dirs
     end
 
     private
@@ -31,6 +32,32 @@ module Openapi
     rescue Psych::SyntaxError => e
       puts "[ERROR] YAMLパースエラー: #{e.message}"
       exit 1
+    end
+
+    # generated ディレクトリ配下の空ディレクトリを再帰的に削除する
+    #
+    # 深い階層から順に削除し、親ディレクトリが空になれば続けて削除する。
+    # generated ルートディレクトリ自体は削除しない。
+    def cleanup_empty_dirs
+      generated_dirs = [
+        Rails.root.join("app/controllers/generated"),
+        Rails.root.join("app/serializers/generated")
+      ]
+
+      generated_dirs.each do |root|
+        next unless root.exist?
+
+        # 深い階層から順に処理するため逆順にソート
+        dirs = root.glob("**/").sort_by { |d| -d.to_s.count("/") }
+        dirs.each do |dir|
+          next if dir == root
+          next unless dir.exist?
+          if dir.children.empty?
+            dir.rmdir
+            puts "[削除]    #{dir.relative_path_from(Rails.root)}"
+          end
+        end
+      end
     end
   end
 end

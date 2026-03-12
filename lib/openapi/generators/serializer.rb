@@ -12,9 +12,6 @@ module Openapi
           return
         end
 
-        FileUtils.mkdir_p(GENERATED_DIR)
-        FileUtils.mkdir_p(SERIALIZERS_DIR)
-
         @resources.each do |resource|
           resource.actions.each do |action|
             write_base_serializer(resource, action)
@@ -113,8 +110,8 @@ module Openapi
       # アクション別クラス名を生成する（モジュール修飾なし・短いクラス名のみ）
       #
       # 例:
-      #   resource_name: "up",    action: "index",  suffix: "BaseSerializer" → "Up::IndexBaseSerializer"
-      #   resource_name: "users", action: "create", suffix: "Serializer"     → "Users::CreateSerializer"
+      #   resource_name: "up",    action: "index",  suffix: "BaseSerializer" → "Ups::IndexBaseSerializer"
+      #   resource_name: "users", action: "create", suffix: "Serializer"     → "Ups::CreateSerializer"
       #   namespace: ["up"], resource_name: "users", action: "index"         → "Ups::Users::IndexBaseSerializer"
       #
       # @param resource [Openapi::Parser::ResourceInfo]

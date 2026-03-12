@@ -12,9 +12,6 @@ module Openapi
           return
         end
 
-        FileUtils.mkdir_p(GENERATED_DIR)
-        FileUtils.mkdir_p(CONTROLLERS_DIR)
-
         @resources.each do |resource|
           write_base_controller(resource)
           write_impl_controller(resource)
