@@ -8,8 +8,7 @@ gen-all: gen code-gen
 
 setup-docker: gen
 	@echo "==> Running gen and setting up app (docker)"
-	docker compose run --rm app bundle install
-	docker compose run --rm app bin/rails db:create db:migrate
+	docker compose run --rm app bash -lc 'bundle install --gemfile /rails/Gemfile && bin/rails db:create db:migrate'
 
 setup: setup-docker
 	@echo "Setup complete (docker)"
